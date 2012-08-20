@@ -19,6 +19,7 @@ class SDLDrawer : public SDLBase {
     struct {
         GLuint vertexTransform;
         GLuint textureTransform;
+        GLuint time;
     } uniforms;
     GLuint timestep = 16;
     FlyingCamera camera;

@@ -29,7 +29,7 @@ int SDLDrawer::makeResources() {
         std::complex<double> answer=one*five;
         // Create our datapoints, store it as bytes
         constexpr int N =2048;
-        GLbyte graph[N][N];
+        std::vector<GLbyte> graph(N*N*2);
         double boundx=4;
         double boundy=4;
          double x = -boundx/ 2.0; 
@@ -40,21 +40,22 @@ int SDLDrawer::makeResources() {
             for (int j = 0; j < N; j++) {
                 
                 y+= boundy/ ((double) N);
-                double z = f (std::complex<double> (x,y)).real();
-                graph[i][j] = roundf(z * 127 + 128);
+                complex<double> z = f (std::complex<double> (x,y));
+                graph[(i*N+j)*2] = roundf(z.real() * 127 + 128);
+                graph[(i*N+j)*2+1] = roundf(z.imag() * 127 + 128);
             }
         }
         resources.make2DTexture();
         glTexImage2D(
                 GL_TEXTURE_2D, // target
                 0, // level, 0 = base, no minimap,
-                GL_LUMINANCE, // internalformat
+                GL_LUMINANCE_ALPHA, // internalformat
                 N, // width
                 N, // height
                 0, // border, always 0 in OpenGL ES
-                GL_LUMINANCE, // format]
+                GL_LUMINANCE_ALPHA, // format]
                 GL_UNSIGNED_BYTE, // type
-                graph
+                &graph.front()
                 );
         constexpr int Nvert=101;
         constexpr int halfNvert=(Nvert-1)/2;
@@ -86,6 +87,7 @@ int SDLDrawer::makeResources() {
         attributes.position = resources.bindAttribute("position");
         uniforms.textureTransform = resources.bindUniform("textureTransform");
         uniforms.vertexTransform = resources.bindUniform("vertexTransform");
+        uniforms.time= resources.bindUniform("time");
     };
     
         int SDLDrawer::drawGLScene() {
@@ -96,6 +98,7 @@ int SDLDrawer::makeResources() {
             
         }
         camera.update(timeElapsed);
+        fclock.addTimeElapsed (timeElapsed);
         fclock.resetStart();
         /* Clear The Screen And The Depth Buffer */
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -107,8 +110,8 @@ int SDLDrawer::makeResources() {
         glm::mat4 texture_transform = glm::mat4(1.0f);
 
         glUniformMatrix4fv(uniforms.vertexTransform, 1, GL_FALSE, glm::value_ptr(vertex_transform));
-
         glUniformMatrix4fv(uniforms.textureTransform, 1, GL_FALSE, glm::value_ptr(texture_transform));
+        glUniform1f (uniforms.time,fclock.getTotalTime());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
