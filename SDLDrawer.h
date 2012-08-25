@@ -8,8 +8,8 @@
 #ifndef SDLDRAWER_H
 #define	SDLDRAWER_H
 #include "SDLlib.h"
-#include "CAS IO.h"
-#include <complex>
+#include "ComplexFunction.h"
+#include "SurfaceCamera.h"
 class SDLDrawer : public SDLBase {
 
     struct {
@@ -21,8 +21,10 @@ class SDLDrawer : public SDLBase {
         GLuint textureTransform;
         GLuint time;
     } uniforms;
+    
     GLuint timestep = 16;
-    FlyingCamera camera;
+    SurfaceCamera camera;
+    ComplexSurface terrain;
 public:
 
     //Initialisation function

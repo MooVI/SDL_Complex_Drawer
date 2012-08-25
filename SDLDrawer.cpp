@@ -7,80 +7,82 @@
 
 #include "SDLDrawer.h"
 
+
+
+constexpr int Nvert=101;
+        constexpr int halfNvert=(Nvert-1)/2;
+        const int Nvertm1=Nvert-1;
+        
 int SDLDrawer::makeResources() {
         //Comment this out before debugging!
         //SDL_WM_GrabInput(SDL_GRAB_ON);
         
-        camera.setUpCamera(0,-0.4,0);
+       
         
         resources.makeShader(GL_VERTEX_SHADER, "vshader.vert");
         resources.makeShader(GL_FRAGMENT_SHADER, "fshader.frag");
         resources.makeProgram();
-        CasUnaryFunction f;
-        bool success=false;
-        while (!success){
-        std::string fname;
-        std::cout<<"Enter function: ";
-        std::getline(std::cin,fname);
-        f.createFunction(fname,fname,&success);
-        }
-        std::complex<double> five=(5,0);
-        std::complex<double> one=(1,-1);
-        std::complex<double> answer=one*five;
-        // Create our datapoints, store it as bytes
-        constexpr int N =2048;
-        std::vector<GLbyte> graph(N*N*2);
-        double boundx=4;
-        double boundy=4;
-         double x = -boundx/ 2.0; 
-         double y = -boundy/2.0;
-        for (int i = 0; i < N; i++) {
-            x+= boundx/ ((double) N);
-            y = -boundy/2.0;
-            for (int j = 0; j < N; j++) {
-                
-                y+= boundy/ ((double) N);
-                complex<double> z = f (std::complex<double> (x,y));
-                graph[(i*N+j)*2] = roundf(z.real() * 127 + 128);
-                graph[(i*N+j)*2+1] = roundf(z.imag() * 127 + 128);
-            }
-        }
+       
+         
+       /*  for(int i = 0; i < N; i++) {
+
+    for(int j = 0; j < N; j++) {
+
+      float x = (i - N / 2) / (N / 2.0);
+
+      float y = (j - N / 2) / (N / 2.0);
+
+      float d = hypotf(x, y) * 4.0;
+
+      float z = (1 - d * d) * expf(d * d / -2.0);
+
+      graph[i][j] = roundf(z * 127 + 128);
+
+    }
+
+  }*/
+        const int N=512;
+        terrain.setFunction();
+        terrain.setSquare(glm::vec2 (1,1),glm::vec2(-0.5,-0.5));
+        terrain.fillHeightMap(N);
+        camera.setUpCamera(glm::vec3 (0,1,0), 
+                [&](double x, double y){return terrain.getHeight(x,y,fclock.getTotalTime())+0.1;});
+           
         resources.make2DTexture();
         glTexImage2D(
                 GL_TEXTURE_2D, // target
                 0, // level, 0 = base, no minimap,
-                GL_LUMINANCE_ALPHA, // internalformat
+                GL_RG32F, // internalformat
                 N, // width
                 N, // height
                 0, // border, always 0 in OpenGL ES
-                GL_LUMINANCE_ALPHA, // format]
-                GL_UNSIGNED_BYTE, // type
-                &graph.front()
+                GL_RG, // format]
+                GL_FLOAT, // type
+                terrain.getGraphData()
                 );
-        constexpr int Nvert=101;
-        constexpr int halfNvert=(Nvert-1)/2;
+        
         // Create an array for 101 * 101 vertices
         glm::vec2 vertices[Nvert][Nvert];
         for (int i = 0; i < Nvert; i++) {
             for (int j = 0; j < Nvert; j++) {
-                vertices[i][j].x = (j - 50) / 50.0;
-                vertices[i][j].y = (i - 50) / 50.0;
+                vertices[i][j].x = (double)(j - halfNvert) / (double) halfNvert;
+                vertices[i][j].y = (double) (i - halfNvert) / (double) halfNvert;
             }
         }
         resources.makevBuffer(GL_ARRAY_BUFFER, vertices, sizeof (vertices));
 
-        GLushort indices[100 * 100 * 6];
+        GLushort indices[Nvertm1 * Nvertm1 * 6];
         int i = 0;
         // Triangles
-        for (int y = 0; y < 100; y++) {
-            for (int x = 0; x < 100; x++) {
-                indices[i++] = y * 101 + x;
-                indices[i++] = y * 101 + x + 1;
-                indices[i++] = (y + 1) * 101 + x + 1;
+        for (int y = 0; y <Nvertm1; y++) {
+            for (int x = 0; x < Nvertm1; x++) {
+                indices[i++] = y * Nvert + x;
+                indices[i++] = y * Nvert + x + 1;
+                indices[i++] = (y + 1) * Nvert + x + 1;
 
-                indices[i++] = y * 101 + x;
-                indices[i++] = (y + 1) * 101 + x + 1;
-                indices[i++] = (y + 1) * 101 + x;
+                indices[i++] = y * Nvert + x;
+                indices[i++] = (y + 1) * Nvert + x + 1;
+                indices[i++] = (y + 1) * Nvert + x;
             }
         }
         resources.makeeBuffer(GL_ELEMENT_ARRAY_BUFFER, indices, sizeof (indices));
@@ -92,13 +94,14 @@ int SDLDrawer::makeResources() {
     
         int SDLDrawer::drawGLScene() {
         GLuint timeElapsed=fclock.getTimeElapsed();
+        fclock.addTimeElapsed (timeElapsed);
         while (fclock.isTimeAvailable(timestep)){
             
             
             
         }
         camera.update(timeElapsed);
-        fclock.addTimeElapsed (timeElapsed);
+        
         fclock.resetStart();
         /* Clear The Screen And The Depth Buffer */
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -133,7 +136,7 @@ int SDLDrawer::makeResources() {
                 );
         glEnableVertexAttribArray(attributes.position);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, resources.geteBuffer());
-        glDrawElements(GL_TRIANGLES, 100 * 100 * 6, GL_UNSIGNED_SHORT, 0);
+        glDrawElements(GL_TRIANGLES,Nvertm1 * Nvertm1 * 6, GL_UNSIGNED_SHORT, 0);
 
         glDisableVertexAttribArray(attributes.position);
 
@@ -142,4 +145,5 @@ int SDLDrawer::makeResources() {
         fclock.printfps();
         return ( true);
     }
+        
 
