@@ -1,1 +1,1 @@
-SDL OpenGl complex function drawer. Use functions of z not x +iy. Draws real part at the moment. As there isn't any bound checking at the moment, most functions will look odd.
+SDL OpenGl complex function drawer. Use functions of z not x +iy. Animates between real and imagianary part, mixing with sine and cosine. As there isn't any bound checking at the moment, most functions will look odd.
