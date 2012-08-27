@@ -8,9 +8,11 @@
 #ifndef COMPLEXFUNCTION_H
 #define	COMPLEXFUNCTION_H
 #include "CAS IO.h"
+#include "GLResources.h"
 #include <complex>
 #include "Plotting/Plotter/Plotter.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <GL/gl.h>
 
 
@@ -56,27 +58,53 @@ public:
 };
 
 
+struct Attributes {
+        glm::vec2 position; 
+        glm::vec4 normal; 
+        
+    };
+
+
+
 class ComplexSurface {
     typedef std::complex<double> complexT;
     Ridders<double> diff;
     CasUnaryFunction f;
     glm::dvec2 side,lowleft;
-    std::vector<GLfloat> graph;
-    std::vector<double> normal;
+    GLint Nvertices;
     float rate =0.001;
-
-public:
-    void * getGraphData ();
+    struct{
+        GLint position;
+        GLint normal;
+    } attributes;
+    struct {
+         GLint colour; 
+        GLint specular; 
+        GLint shininess; 
+    } uniforms;
+    std::vector<Attributes> vertices;
+    Material material;
     void setFunction() ;
     void setSquare(glm::vec2 iside, glm::vec2 ilowleft) ;
-    void fillHeightMap(const int N) ;
-    void fillNormals(const int N) ;
+    void buildHeightMap(const int N) ;
+    GLResources resources;
+    void bindVariables ();
+    void buildVertices (const int Nvertices);
+    void buildIndices (const int Nvertices);
+public:
+    
+    
+    void setMaterial (Material imaterial){
+        material=imaterial;
+    }
     double getHeight (double y, double x, double t);
+    void buildSurface (glm::vec2 iside, glm::vec2 ilowleft, int, int,GLuint program);
+    void render ();
     
 };
 
 
-inline void * ComplexSurface::getGraphData (){return (void *) &graph.front();}
+
 
 inline double ComplexSurface::getHeight (double y, double x, double t){
         complexT z(side.x*(x+1.0)/2+lowleft.x,side.y*(y+1.0)/2+lowleft.y);

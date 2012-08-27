@@ -12,13 +12,11 @@
 #include "SurfaceCamera.h"
 class SDLDrawer : public SDLBase {
 
-    struct {
-        GLuint position;
-    } attributes;
+    
 
     struct {
-        GLuint vertexTransform;
-        GLuint textureTransform;
+        GLuint modelview;
+        GLuint projection;
         GLuint time;
     } uniforms;
     
